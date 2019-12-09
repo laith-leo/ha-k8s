@@ -1,0 +1,7 @@
+ master1.laith.info
+ master2.laith.info
+ master3.laith.info
+ worker1.laith.info
+ worker2.laith.info
+ worker3.laith.info
+ lb.laith.info
