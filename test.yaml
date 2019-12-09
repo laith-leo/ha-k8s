@@ -117,7 +117,11 @@
   - name: Final steps to lock services version and starting up the installed services
     command:
       yum versionlock add docker-ce kubelet kubeadm docker-ce-cli
-      systemctl restart docker && systemctl enable docker && systemctl restart kubelet.service && systemctl enable kubelet.service
+     
+
+  - name: enabling all the service to  be present after reboot
+    command:
+      systemctl restart docker.service && systemctl enable docker.service && systemctl restart kubelet.service && systemctl enable kubelet.service
 
 ##  - name: initialize the cluster
 ##    shell: kubeadm init --pod-network-cidr=192.168.0.0/16
