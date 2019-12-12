@@ -1,0 +1,149 @@
+---
+- hosts: masters
+  become: true
+  tasks:
+  - name: Update installed yum packages
+    yum:
+      name=*
+      state=latest
+
+
+  - name: Installing System packages
+    yum:
+     name: "{{packages}}"
+     state: present
+    vars:
+     packages:
+     - git
+     - wget
+     - curl
+     - vim
+     - screen
+     - nc
+     - net-tools
+     - zsh
+     - yum-utils
+     - epel-*
+     - device-mapper-persistent-data
+     - lvm2
+     - yum-plugin-versionlock
+
+  - name: Remove swapfile from /etc/fstab
+    mount:
+      name: "{{ item }}"
+      fstype: swap
+      state: absent
+    with_items:
+     - swap
+     - none
+
+  - name: Disable SWAP
+    sysctl: 
+      name: vm.swappiness
+      value: 0
+      state: absent
+  
+  - name: Enable IPforwarding in kernel
+    sysctl:
+      name: net.ipv4.ip_forward
+      value: '1'
+      sysctl_set: yes
+      state: present
+      reload: yes
+
+  - name: Install Docker CE
+    shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && yum install -y  docker-ce docker-ce-cli containerd.io
+    
+
+  - name: Disable SELinux
+    command: setenforce 0
+
+  - name: Disable SELinux on reboot
+    selinux:
+      state: disabled
+
+  - name: Ensure net.bridge.bridge-nf-call-ip6tables is set to 1
+    become: yes
+    shell: modprobe br_netfilter && sysctl --system
+
+
+  - name: Add Kubernetes' YUM repository
+    yum_repository:
+      name: Kubernetes
+      description: Kubernetes YUM repository
+      baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+      gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+      gpgcheck: yes
+
+  - name: Install kubelet
+    yum:
+      name: kubelet
+      state: present
+      update_cache: true
+
+  - name: Install kubeadm
+    yum:
+      name: kubeadm
+      state: present
+
+  - name: Start kubelet
+    service:
+      name: kubelet
+      enabled: yes
+      state: started
+
+
+  - name: Install kubectl
+    yum:
+      name: kubectl
+      state: present
+      allow_downgrade: yes
+
+  - name: Enable firewalld
+    service:
+      name=firewalld
+      state=started
+      enabled=yes
+
+  - name: Allow k8s ports in firewalld
+    shell: firewall-cmd --permanent --add-port=10252/tcp --add-port=10255/tcp && firewall-cmd --reload
+
+  - name: Final steps to lock services version and starting up the installed services
+    command:
+      yum versionlock add docker-ce kubelet kubeadm docker-ce-cli
+     
+
+  - name: Enabling all the service to be present after reboot
+    command:
+      systemctl restart docker.service && systemctl enable docker.service && systemctl restart kubelet.service && systemctl enable kubelet.service
+
+
+  - name: Create .kube directory
+    file:
+        path: /home/devops/.kube
+        state: directory
+        mode: 0755
+
+
+  - name: Copy admin.conf to user's kube config
+    copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/devops/.kube/config
+        remote_src: yes
+        owner: devops
+
+
+  - name: Initialize the cluster
+    shell: kubeadm init --pod-network-cidr=192.168.0.0/16
+    ignore_errors: yes
+    args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+
+
+
+  - name: Install Calico Network plugin
+    kubernetes:
+    api_endpoint: 10.0.0.210
+    file_reference: https://docs.projectcalico.org/v3.10/manifests/calico.yaml
+    state: present
