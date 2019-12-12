@@ -1,5 +1,5 @@
 ---
-- hosts: masters
+- hosts: workers
   become: true
   tasks:
   - name: Update installed yum packages
