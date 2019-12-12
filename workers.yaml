@@ -1,5 +1,5 @@
 ---
-- hosts: workers
+- hosts: masters
   become: true
   tasks:
   - name: Update installed yum packages
@@ -43,6 +43,9 @@
       value: 0
       state: absent
   
+  - name: Unmounting swap
+    shell: swapoff -a
+  
   - name: Enable IPforwarding in kernel
     sysctl:
       name: net.ipv4.ip_forward
@@ -66,7 +69,8 @@
     become: yes
     shell: modprobe br_netfilter && sysctl --system
 
-
+  - name: Another kernel prerequiste for K8s 
+    shell: echo 1 > /proc/sys/net/bridge/bridge-nf-call-iptables
   - name: Add Kubernetes' YUM repository
     yum_repository:
       name: Kubernetes
@@ -87,11 +91,7 @@
       state: present
 
   - name: Start kubelet
-    service:
-      name: kubelet
-      enabled: yes
-      state: started
-
+    shell: systemctl start kubelet
 
   - name: Enable firewalld
     service:
@@ -104,9 +104,7 @@
 
   - name: Final steps to lock services version and starting up the installed services
     command:
-      yum versionlock add docker-ce kubelet docker-ce-cli
+      yum versionlock add docker-ce kubelet kubeadm docker-ce-cli
      
-
   - name: Enabling all the service to be present after reboot
-    command:
-      systemctl restart docker.service && systemctl enable docker.service && systemctl restart kubelet.service && systemctl enable kubelet.service
+    shell: systemctl restart docker.service && systemctl enable docker.service && systemctl restart kubelet.service && systemctl enable kubelet.service

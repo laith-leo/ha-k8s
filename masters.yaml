@@ -111,7 +111,7 @@
 
   - name: Final steps to lock services version and starting up the installed services
     command:
-      yum versionlock add docker-ce kubelet kubeadm docker-ce-cli
+      yum versionlock add kubectl docker-ce kubelet kubeadm docker-ce-cli
      
 
   - name: Enabling all the service to be present after reboot
