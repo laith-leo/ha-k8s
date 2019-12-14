@@ -107,7 +107,7 @@
       enabled=yes
 
   - name: Allow k8s ports in firewalld
-    shell: firewall-cmd --permanent --add-port=10252/tcp --add-port=10255/tcp && firewall-cmd --reload
+    shell: firewall-cmd --permanent --add-port=10252/tcp --add-port=2379/tcp --add-port=10255/tcp && firewall-cmd --reload
 
   - name: Final steps to lock services version and starting up the installed services
     command:
@@ -125,28 +125,28 @@
         mode: 0755
 
 
-  - name: Initialize the cluster
-    shell: kubeadm init --pod-network-cidr=192.168.0.0/16
-    ignore_errors: yes
-    args:
-        chdir: $HOME
-        creates: cluster_initialized.txt
+#  - name: Initialize the cluster
+#    shell: sudo kubeadm init --control-plane-endpoint  lb.laith.info:443 --upload-certs --pod-network-cidr 192.168.0.0/16
+#    ignore_errors: yes
+#    args:
+#        chdir: $HOME
+#        creates: cluster_initialized.txt
 
 
 
-  - name: Copy admin.conf to user's kube config
-    copy:
-        src: /etc/kubernetes/admin.conf
-        dest: /home/devops/.kube/config
-        remote_src: yes
-        owner: devops
+#  - name: Copy admin.conf to user's kube config
+#    copy:
+#        src: /etc/kubernetes/admin.conf
+#        dest: /home/devops/.kube/config
+#        remote_src: yes
+#        owner: devops
   
-  - name: Export Kubeconfig
-    shell: echo 'export KUBECONFIG=/home/devops/.kube/config' >> /home/devops/.bashrc
-    environment:
-      KUBECONFIG: /home/devops/.kube/config
+#  - name: Export Kubeconfig
+#    shell: echo 'export KUBECONFIG=/home/devops/.kube/config' >> /home/devops/.bashrc
+#    environment:
+#      KUBECONFIG: /home/devops/.kube/config
 
 
-  - name: Install Calico Network plugin
-    ignore_errors: yes
-    shell: kubectl apply -f https://docs.projectcalico.org/v3.10/manifests/calico.yaml --kubeconfig=/home/devops/.kube/config
+#  - name: Install Calico Network plugin
+#    ignore_errors: yes
+#    shell: kubectl apply -f https://docs.projectcalico.org/v3.10/manifests/calico.yaml --kubeconfig=/home/devops/.kube/config

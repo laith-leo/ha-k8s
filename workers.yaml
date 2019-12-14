@@ -54,6 +54,14 @@
       state: present
       reload: yes
 
+  - name: Ensure net.bridge.bridge-nf-call-ip6tables is set to 1
+    become: yes
+    shell: modprobe br_netfilter && sysctl --system
+
+  - name: Another kernel prerequiste for K8s
+    shell: echo 1 > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+
   - name: Install Docker CE
     shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && yum install -y  docker-ce docker-ce-cli containerd.io
     
