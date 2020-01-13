@@ -1,2 +1,2 @@
 # ha-k8s
-ha k8s under centos7 with nginx as an lb
+ha k8s under centos7 with HAProxy as an lb
